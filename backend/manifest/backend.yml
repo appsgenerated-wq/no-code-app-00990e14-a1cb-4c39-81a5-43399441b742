@@ -1,0 +1,76 @@
+name: Feastly
+description: A food discovery and ordering application powered by Manifest.
+
+entities:
+  User:
+    authenticable: true
+    properties:
+      - name
+      - { name: email, type: email, options: { validation: { required: true, unique: true } } }
+      - { name: role, type: choice, options: { values: [customer, owner], default: customer } }
+    policies:
+      create:
+        - access: admin
+      read:
+        - { access: restricted, allow: User, condition: self }
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - access: admin
+      signup:
+        - access: public
+
+  Restaurant:
+    properties:
+      - { name: title, type: string, options: { validation: { required: true } } }
+      - { name: description, type: text }
+      - { name: address, type: string }
+      - { name: heroImage, type: image, options: { sizes: { thumbnail: { width: 400, height: 300 } } } }
+    belongsTo:
+      - { name: owner, entity: User }
+    policies:
+      create:
+        - { access: restricted, allow: User }
+      read:
+        - access: public
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - { access: restricted, allow: User, condition: self }
+
+  MenuItem:
+    properties:
+      - { name: title, type: string, options: { validation: { required: true } } }
+      - { name: description, type: text }
+      - { name: price, type: money, options: { currency: 'USD', validation: { required: true } } }
+      - { name: image, type: image, options: { sizes: { thumbnail: { width: 200, height: 200 } } } }
+    belongsTo:
+      - { name: restaurant, entity: Restaurant }
+      - { name: owner, entity: User } # Required for 'self' policy to work directly on MenuItem
+    policies:
+      create:
+        - { access: restricted, allow: User }
+      read:
+        - access: public
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - { access: restricted, allow: User, condition: self }
+
+  Order:
+    properties:
+      - { name: total, type: money, options: { currency: 'USD' } }
+      - { name: status, type: choice, options: { values: [pending, confirmed, delivered, cancelled], default: pending } }
+    belongsTo:
+      - { name: customer, entity: User, as: owner } # Use 'as: owner' for self policy to work
+    belongsToMany:
+      - { name: items, entity: MenuItem }
+    policies:
+      create:
+        - { access: restricted, allow: User }
+      read:
+        - { access: restricted, allow: User, condition: self }
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - access: admin
